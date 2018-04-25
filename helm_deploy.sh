@@ -51,10 +51,21 @@ eval content=\$\($CHECK_STATUS_COMMAND\)
 
 if [ ! -z $content ]; then
     echo "Upgrading existing chart."
-    COMMAND="helm upgrade $CHART_NAME $FILE_NAME $URL $OVERRIDES > status_info.txt"
+    COMMAND="helm upgrade $CHART_NAME $FILE_NAME $URL $OVERRIDES"
 else
     echo "Installing a new chart."
-    COMMAND="helm install $FILE_NAME $URL $CHART_NAME_ARGUMENT $NAMESPACE_ARGUMENT $OVERRIDES > status_info.txt"
+    COMMAND="helm install $FILE_NAME $URL $CHART_NAME_ARGUMENT $NAMESPACE_ARGUMENT $OVERRIDES"
 fi
 
 eval $COMMAND
+
+HELM_STATUS_COMMAND="helm status $CHART_NAME"
+
+eval output=\$\($HELM_STATUS_COMMAND\)
+while [[ $output = *"<pending>"* ]]; do
+    echo "$CHART_NAME not yet ready."
+    eval output=\$\($HELM_STATUS_COMMAND\)
+done
+
+echo "$CHART_NAME is ready now. Writing the state of resources to 'status_info.txt'"
+echo "$output" > "status_info.txt"
